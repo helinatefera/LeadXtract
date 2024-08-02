@@ -1,5 +1,7 @@
 import asyncio
 import itertools
+import os
+import pathlib
 import random
 import sys
 import threading
@@ -13,12 +15,26 @@ from loguru import logger as log
 from yellowpages.proxy import Proxy
 
 
+def resource_path(*relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = pathlib.Path(__file__).parent
+
+    return os.path.join(base_path, *relative_path)
+
+
 async def make_request(
     async_session: aiohttp.ClientSession,
     url: str,
-    semaphore: asyncio.Semaphore,
+    semaphore: asyncio.Semaphore = asyncio.Semaphore(10),
     proxy: Proxy | None = None,
     progress: threading.Event = None,
+    headers: dict = None,
+    is_post: bool = False,
+    **kwargs: typing.Any,
 ) -> str:
     """
     Make a request to the URL using the provided proxy. Retry the request if it fails.
@@ -31,16 +47,20 @@ async def make_request(
     Returns:
         str: Response text from the URL
     """
+    async_session.headers.update(headers or {})
     proxy = proxy or Proxy()
     async with semaphore:
         for _tries in range(3):
             if progress is None or not progress.is_set():
                 return ""
             try:
-                async with async_session.get(url=url, proxy=proxy.get()) as response:
+                request_method = async_session.post if is_post else async_session.get
+                async with request_method(
+                    url=url, proxy=proxy.get(), **kwargs
+                ) as response:
                     if response.ok:
                         return await response.text()
-                await asyncio.sleep(random.random())
+                await asyncio.sleep(random.random() * 2)
             except Exception as err:
                 log.error(f"Error making request: {err}")
                 continue

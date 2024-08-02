@@ -12,8 +12,8 @@ import customtkinter as ctk
 from loguru import logger as log
 
 from yellowpages.proxy import Proxy
-from yellowpages.scraper import search
-from yellowpages.utils import LoadingAnimation
+from yellowpages.scrapers import Mapper
+from yellowpages.utils import LoadingAnimation, resource_path
 
 PROXY_FILE = ".proxies"
 
@@ -27,12 +27,79 @@ class Redirect:
             self.widget.delete("end-1c linestart", "end-1c lineend")
         self.widget.insert(ctk.END, text)
         self.widget.see(ctk.END)
-    
+
     def flush(self):
         pass
 
 
 ctk.set_appearance_mode("light")  # Set appearance mode to system theme
+
+
+class DropdownMultiSelect(ctk.CTkFrame):
+    def __init__(self, master, items, **kwargs):
+        super().__init__(master, **kwargs)
+
+        # Toggle button to open/close the dropdown
+        self.toggle_button = ctk.CTkButton(
+            self, text="Select Location", command=self.toggle
+        )
+        self.toggle_button.pack(fill="x")
+
+        # Scrollable frame to hold the checkboxes
+        self.scrollable_frame = ctk.CTkScrollableFrame(self, height=50)
+        self.content_frame = ctk.CTkFrame(
+            self.scrollable_frame, height=50
+        )  # Create a frame inside the scrollable frame
+        self.content_frame.pack(pady=(0, 15), padx=0, fill="x")
+        self.scrollable_frame.pack(pady=(0, 15), padx=0, fill="x")
+        # self.location_dropdown.
+        self.scrollable_frame.pack_forget()  # Start hidden
+
+        self.vars = {}
+        self.checkboxes = []
+
+        # Populate with initial items
+        self.set_items(items)
+
+        self.currently_visible = False
+
+    def toggle(self):
+        if self.currently_visible:
+            self.scrollable_frame.pack_forget()
+        else:
+            self.scrollable_frame.pack(pady=(0, 15), padx=0, fill="x")
+        self.currently_visible = not self.currently_visible
+
+    def get_selected_items(self):
+        return [item for item, var in self.vars.items() if var.get() == 1]
+
+    def set_items(self, items):
+        # Clear the existing checkboxes
+        for cb in self.checkboxes:
+            cb.destroy()
+        self.checkboxes.clear()
+        self.vars.clear()
+
+        # Add new checkboxes based on the new items list
+        row = 0
+        col = 0
+        max_cols = 5  # Max columns in a row
+
+        for index, item in enumerate(items):
+            var = ctk.IntVar()
+            cb = ctk.CTkCheckBox(self.content_frame, text=item, variable=var)
+            cb.grid(row=row, column=col, sticky="w", padx=10, pady=2)
+            if col == max_cols - 1:
+                row += 1
+                col = 0
+            else:
+                col += 1
+
+            self.vars[item] = var
+            self.checkboxes.append(cb)
+
+    def get(self):
+        return ",".join(self.get_selected_items())
 
 
 class ProxyConfigPopup(ctk.CTkToplevel):
@@ -80,17 +147,6 @@ class ProxyConfigPopup(ctk.CTkToplevel):
             proxies.write(proxy)
 
 
-def resource_path(*relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller"""
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = pathlib.Path(__file__).parent
-
-    return os.path.join(base_path, *relative_path)
-
-
 class YellowPagesScraperUI(ctk.CTk):
     """
     Yellow Pages Scraper UI Application
@@ -103,11 +159,18 @@ class YellowPagesScraperUI(ctk.CTk):
 
         self.progress = threading.Event()
         self.loading_animation = LoadingAnimation(progress=self.progress)
-        self.iconbitmap(resource_path("icon.ico"))
+        self.mapper = Mapper()
+        # self.iconbitmap(resource_path("icon.ico"))
 
         self.title("Yellow Pages Scraper v1.0")
         self.geometry("900x610")  # Set a fixed window size
         self.resizable(False, False)  # Disable window resizing
+
+        self.websites = self.mapper.get_options()
+
+        if not self.websites:
+            messagebox.showerror("Error", "No scraper modules found.")
+            sys.exit(1)
 
         # Create a container for the proxy button
         self.proxy_container = ctk.CTkFrame(
@@ -127,13 +190,33 @@ class YellowPagesScraperUI(ctk.CTk):
         )
         self.select_proxy_file_button.pack(pady=0, padx=0, side="right")
 
+        # Create a dropdown menu for selecting the scraping website
+
+        self.scraping_website_dropdown = ctk.CTkComboBox(
+            self.proxy_container,
+            font=("Segoe UI Variable Text", 14),
+            corner_radius=0,
+            fg_color="#fff",
+            height=45,
+            width=225,
+            values=self.websites,
+            state="readonly",
+            command=self.set_scraping_website,
+        )
+        self.scraping_website_dropdown.pack(pady=0, padx=0, side="left")
+
+        self.scraping_website_dropdown.set(self.websites[0])
+        self.website = self.websites[0]
+
         # Create a container for the form elements
-        self.container = ctk.CTkFrame(self, corner_radius=8, fg_color="transparent")
-        self.container.pack(padx=30, pady=0, fill="both")
+        self.search_container = ctk.CTkFrame(
+            self, corner_radius=8, fg_color="transparent"
+        )
+        self.search_container.pack(padx=30, pady=0, fill="both")
 
         # Business Name Entry
         self.keyowrds_entry = ctk.CTkEntry(
-            self.container,
+            self.search_container,
             placeholder_text="Keywords",
             font=("Segoe UI Variable Text", 16),
             corner_radius=3,
@@ -144,7 +227,7 @@ class YellowPagesScraperUI(ctk.CTk):
         self.keyowrds_entry.pack(pady=(0, 15), padx=0, fill="x")
 
         self.location_entry = ctk.CTkEntry(
-            self.container,
+            self.search_container,
             placeholder_text="Locations",
             font=("Segoe UI Variable Text", 16),
             corner_radius=3,
@@ -152,7 +235,21 @@ class YellowPagesScraperUI(ctk.CTk):
             border_color="#ddd",
         )
         # Add padding inside the entry
-        self.location_entry.pack(pady=(0, 15), padx=0, fill="x")
+
+        self.location_dropdown = DropdownMultiSelect(
+            self.search_container,
+            items=[],
+            # font=("Segoe UI Variable Text", 16),
+            corner_radius=3,
+            height=45,
+            border_color="#ddd",
+            # state="readonly",
+        )
+        self.location_widget = None
+        self.set_dropdown()
+
+        self.container = ctk.CTkFrame(self, corner_radius=8, fg_color="transparent")
+        self.container.pack(padx=30, pady=0, fill="both")
 
         self.select_save_as_button = ctk.CTkButton(
             self.container,
@@ -200,13 +297,31 @@ class YellowPagesScraperUI(ctk.CTk):
             spacing1=1,
         )
 
-        self.log_text.pack(padx=30, pady=15, fill="both", expand=True, ipadx=300, ipady=30)
+        self.log_text.pack(
+            padx=30, pady=15, fill="both", expand=True, ipadx=300, ipady=30
+        )
         self.log_text.bind("<Key>", lambda e: "break")
         sys.stdout = Redirect(self.log_text)
         sys.stderr = sys.stdout
 
         self.toplevel_window = None
         self.file_path = None
+
+    def set_dropdown(self):
+        dropdowns = self.mapper.get_dropdown(self.website)
+        if not dropdowns:
+            self.location_dropdown.pack_forget()
+            self.location_entry.pack(pady=(0, 15), padx=0, fill="x")
+            self.location_widget = self.location_entry
+            return
+        self.location_entry.pack_forget()
+        self.location_dropdown.set_items(dropdowns)
+        self.location_dropdown.pack(pady=(0, 15), padx=0, fill="x")
+        self.location_widget = self.location_dropdown
+
+    def set_scraping_website(self, selected):
+        self.website = selected
+        self.set_dropdown()
 
     def select_proxy_file(self):
         if not self.toplevel_window or not self.toplevel_window.winfo_exists():
@@ -234,7 +349,7 @@ class YellowPagesScraperUI(ctk.CTk):
             messagebox.showerror("Error", "Please enter business names.")
             return
 
-        locations = self.location_entry.get()
+        locations = self.location_widget.get()
 
         if len(locations) == 0:
             messagebox.showerror("Error", "Please enter locations.")
@@ -282,7 +397,7 @@ class YellowPagesScraperUI(ctk.CTk):
     async def run(self, query, progress, semaphore, proxy=None):
         BASE_HEADERS = {
             "accept-language": "en-US,en;q=0.9",
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+            "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
             "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         }
 
@@ -292,6 +407,13 @@ class YellowPagesScraperUI(ctk.CTk):
             connector=aiohttp.TCPConnector(ssl=False),
         ) as session:
             try:
+                search = self.mapper.get_search(self.website)
+
+                if not search:
+                    log.error(f"`search` method not implemented for {self.website}.")
+                    self.stop_button.invoke()
+                    sys.exit(1)
+
                 search_result = await asyncio.gather(
                     *[
                         search(
