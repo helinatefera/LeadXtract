@@ -1,23 +1,19 @@
-import customtkinter as ctk
 import os
-from licensing.models import *
-from licensing.methods import Key, Helpers
-from loguru import logger as log
-import tkinter as tk
-from tkinter import messagebox
 
+import customtkinter as ctk
+from decouple import config
+from licensing.methods import Helpers, Key
+from loguru import logger as log
 from yellowpages import YellowPagesScraperUI
-from yellowpages.utils import resource_path
 
 # Remove default loguru logger and configure it
 log.remove()
 # log.add(sys.stdout, level="ERROR", format="{message} {file} {line}")
 
-RSAPubKey = (
-"<RSAKeyValue><Modulus>w6jQq3SziyfW1db5TkegC/wnSVuyd2i4oj/MtaurBpkhXZCgpcYkCDWEV2mAFzNIhxItKOw9s80xyTd8Uid1jyBAztHP1Ix3ROOumZ4Ib0wcg6gd65gixsARby6RkZtxW+xJ+auxt5cjgxNklrduXSN/31vAqQTiSAreZj9nMvjYh14yGIZjYouFlQLX3Sin/L0bOUXrR91udAssWapZ7YWKPNYHVfOW2xiP8nU5uWk82tl+i5tnaeusxoPaB1oKe0q/HEiRElVpdtzDGB6dRDTnStzPxCeF57PjUS8lhj8DsndAPJI1ZOpbeJbY30r2iY7R0HF4P5svzLknkH3CUQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>")
-auth = "WyI4OTgxNTYzMCIsIlpnZUhxRXhHdmxCdWx1dXEwNEpuUUZKeUxRcEkwZ3FScmp2eTVocDQiXQ=="
-key_file = "activation_key.txt"
+RSAPubKey = config("RSA_PUB_KEY", default="") or config("RSA_PUB_KEY", default="")
 
+auth = config("AUTH_TOKEN", default="")
+key_file = config("KEY_FILE", default="key.txt")
 
 
 def get_saved_key():
@@ -26,34 +22,40 @@ def get_saved_key():
             return file.read().strip()
     return None
 
+
 def save_key(key):
     with open(key_file, "w") as file:
         file.write(key)
 
-def display_result(message, title="Result"):
 
+def display_result(message, title="Result"):
     root = ctk.CTk()
     root.title("Yellow Pages Scraper v1.0")
     # root.iconbitmap(resource_path('icon.ico'))
-    root.config(bg='#f9c852')
+    root.config(bg="#f9c852")
     # Set the window size and position
     window_width = 370
     window_height = 153
 
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-    position_top = int(screen_height/2 - window_height/2)
-    position_right = int(screen_width/2 - window_width/2)
-    
-    root.geometry(f'{window_width}x{window_height}+{position_right}+{position_top}')
-    
-    result_label = ctk.CTkLabel(root, text=message, font=('Helvetica', 15,'bold'), wraplength=350)
+    position_top = int(screen_height / 2 - window_height / 2)
+    position_right = int(screen_width / 2 - window_width / 2)
+
+    root.geometry(f"{window_width}x{window_height}+{position_right}+{position_top}")
+
+    result_label = ctk.CTkLabel(
+        root, text=message, font=("Helvetica", 15, "bold"), wraplength=350
+    )
     result_label.pack(pady=30)
-    result_label.configure(bg_color='black', fg_color='#f9c852')
-    close_button = ctk.CTkButton(root, text="Close", command=root.destroy, font=('Helvetica', 16))
-    close_button.configure(fg_color='red', text_color='white')
+    result_label.configure(bg_color="black", fg_color="#f9c852")
+    close_button = ctk.CTkButton(
+        root, text="Close", command=root.destroy, font=("Helvetica", 16)
+    )
+    close_button.configure(fg_color="red", text_color="white")
     close_button.pack(pady=10)
     root.mainloop()
+
 
 def activate_key():
     key = entry.get()
@@ -62,7 +64,7 @@ def activate_key():
         rsa_pub_key=RSAPubKey,
         product_id=26728,
         key=key,
-        machine_code=Helpers.GetMachineCode(v=2)
+        machine_code=Helpers.GetMachineCode(v=2),
     )
     print(result)
     if result[0] is None:
@@ -75,13 +77,16 @@ def activate_key():
             custom_message = "License is not valid. Please use a valid key."
         display_result(custom_message, "Activation Error")
     elif not Helpers.IsOnRightMachine(result[0], v=2):
-        display_result("This license is already activated on another machine.", "Activation Error")
+        display_result(
+            "This license is already activated on another machine.", "Activation Error"
+        )
     else:
         display_result("The license is valid!", "Activation Success")
         save_key(key)  # Save the activation key
         root.quit()  # Close the key entry window
         app = YellowPagesScraperUI()
         app.mainloop()
+
 
 saved_key = get_saved_key()
 print(f"Saved key: {saved_key}")
@@ -92,14 +97,14 @@ if saved_key:
         rsa_pub_key=RSAPubKey,
         product_id=26728,
         key=saved_key,
-        machine_code=Helpers.GetMachineCode(v=2)
+        machine_code=Helpers.GetMachineCode(v=2),
     )
     print(result)
 
     if result[0] is None or not Helpers.IsOnRightMachine(result[0], v=2):
         saved_key = None  # Key is invalid, reset saved_key
 
-if saved_key != None:
+if saved_key is not None:
     # License is already activated, start the application
     app = YellowPagesScraperUI()
     app.mainloop()
@@ -112,24 +117,31 @@ else:
 
     screen_width = root.winfo_screenwidth()
     screen_height = root.winfo_screenheight()
-    position_top = int(screen_height/2 - window_height/2)
-    position_right = int(screen_width/2 - window_width/2)
+    position_top = int(screen_height / 2 - window_height / 2)
+    position_right = int(screen_width / 2 - window_width / 2)
 
-    root.geometry(f'{window_width}x{window_height}+{position_right}+{position_top}')
+    root.geometry(f"{window_width}x{window_height}+{position_right}+{position_top}")
 
     root.resizable(False, False)  # Disable window resizing
     # root.iconbitmap(resource_path("icon.ico"))
     root.title("License Key Activation")
 
     # Create and place the key entry field
-    label = ctk.CTkLabel(root, text="Enter your license key:", font=("Arial", 20, "bold"), corner_radius=0)
+    label = ctk.CTkLabel(
+        root,
+        text="Enter your license key:",
+        font=("Arial", 20, "bold"),
+        corner_radius=0,
+    )
     label.pack(padx=10, pady=15, fill="x")
 
     entry = ctk.CTkEntry(root, corner_radius=0)
     entry.pack(padx=15, pady=5, fill="x", ipady=10)
 
     # Create and place the activate button
-    button = ctk.CTkButton(root, text="ACTIVATE", command=activate_key, fg_color="green", corner_radius=0)
+    button = ctk.CTkButton(
+        root, text="ACTIVATE", command=activate_key, fg_color="green", corner_radius=0
+    )
     button.pack(pady=(10, 5), ipady=10)
     # Run the Tkinter event loop
     root.mainloop()
