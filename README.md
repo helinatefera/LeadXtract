@@ -2,7 +2,7 @@
 
 ## Overview
 
-LeadXtract is a Python package that scrapes data from multiple websites and organizes it in a structured format. It supports both static and dynamic websites using BeautifulSoup, Scrapy, and Selenium.
+LeadXtract is a Python package that scrapes data from multiple websites and organizes it in a structured format. It supports both static and dynamic websites.
 
 This package is well-structured and follows coding best practices, integrating debugging tools (pdb) and automated formatting/linting with black and flake8.
 
