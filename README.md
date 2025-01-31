@@ -4,13 +4,13 @@
 
 LeadXtract is a Python package that scrapes data from multiple websites and organizes it in a structured format. It supports both static and dynamic websites.
 
-This package is well-structured and follows coding best practices, integrating debugging tools (pdb) and automated formatting/linting with black and flake8.
+This package is well-structured and follows coding best practices, integrating debugging tools and automated formatting/linting with black and flake8.
 
 ### Features
 
 - Scrapes data from more than five websites.
 
-- Includes error handling and debugging with pdb.
+- Includes error handling and debugging.
 
 - Supports automated code formatting using black.
 
