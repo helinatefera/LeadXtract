@@ -7,7 +7,6 @@ import aiohttp
 from loguru import logger as log
 from parsel import Selector
 from typing_extensions import TypedDict
-
 from yellowpages.proxy import Proxy
 from yellowpages.utils import EventManager, make_request
 
@@ -46,8 +45,8 @@ def parse_companies(company_info) -> Company:
         "data.search.entries[?entry.entryType=='BUSINESS'].entry"
     ):
         try:
-            first = lambda query: entry.jmespath(query).get("")
-            many = lambda query: ", ".join(
+            first = lambda query: entry.jmespath(query).get("")  # noqa: E731
+            many = lambda query: ", ".join(  # noqa: E731
                 set([value for value in entry.jmespath(query).getall()])
             )
             info = {
@@ -143,7 +142,12 @@ async def search(
                 },
                 "q": "",
             },
-            "query": "query search($what:String$where:String$q:String$pagination:PaginationInformation!$debugMode:Boolean=true){search(options:{what:$what,where:$where,q:$q,debugMode:$debugMode}pagination:$pagination){total totalBusinesses entries{entry{entryType title address{streetLine zipCode city cantonCode}contacts{value __typename}categories{all{name{en}}}}}}}",
+            "query": "query search($what:String$where:String$q:String$paginati"
+            "on:PaginationInformation!$debugMode:Boolean=true){search(options:"
+            "{what:$what,where:$where,q:$q,debugMode:$debugMode}pagination:$pa"
+            "gination){total totalBusinesses entries{entry{entryType title add"
+            "ress{streetLine zipCode city cantonCode}contacts{value __typename"
+            "}categories{all{name{en}}}}}}}",
         }
 
     BASE_URL = "https://www.local.ch/api/graphql"
