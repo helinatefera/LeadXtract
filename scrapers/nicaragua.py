@@ -7,7 +7,6 @@ import aiohttp
 from loguru import logger as log
 from parsel import Selector
 from typing_extensions import TypedDict
-
 from yellowpages.proxy import Proxy
 from yellowpages.utils import EventManager, make_request
 
@@ -43,8 +42,8 @@ def parse_companies(company_info) -> Company:
     companies = []
     for result in selector.css("ol.result-items > li.result-item"):
         try:
-            first = lambda css: result.css(css).get("").strip()
-            many = lambda css: ", ".join(
+            first = lambda css: result.css(css).get("").strip()  # noqa: E731
+            many = lambda css: ", ".join(  # noqa: E731
                 set([value.strip() for value in result.css(css).getall()])
             )
 
@@ -57,7 +56,7 @@ def parse_companies(company_info) -> Company:
             info = {
                 "name": first("h2[itemprop='name']::text"),
                 "categories": many(
-                    "div > div:nth-child(1) > div.flex.gap-4.mb-2\.5.items-start > span > span::text"
+                    "div > div:nth-child(1) > div.flex.gap-4.mb-2\\.5.items-start > span > span::text"
                 ),
                 "phone": first("div[data-js-event='call']::attr(data-js-value)"),
                 "email": first("div[data-js-event='email']::attr(data-js-value)"),
