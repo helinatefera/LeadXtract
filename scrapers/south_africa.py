@@ -8,7 +8,6 @@ import aiohttp
 from loguru import logger as log
 from parsel import Selector
 from typing_extensions import TypedDict
-
 from yellowpages.proxy import Proxy
 from yellowpages.utils import EventManager, make_request
 
@@ -44,8 +43,8 @@ def parse_companies(company_info) -> Company:
 
     for result in selector.jmespath("data"):
         try:
-            first = lambda query: result.jmespath(query).get("").strip()
-            many = lambda query: ", ".join(
+            first = lambda query: result.jmespath(query).get("").strip()  # noqa: E731
+            many = lambda query: ", ".join(  # noqa: E731
                 set([value.strip() for value in result.jmespath(query).getall()])
             )
             info = {
