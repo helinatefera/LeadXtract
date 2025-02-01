@@ -9,7 +9,6 @@ import aiohttp
 from loguru import logger as log
 from parsel import Selector
 from typing_extensions import TypedDict
-
 from yellowpages.proxy import Proxy
 from yellowpages.utils import EventManager, make_request
 
@@ -49,11 +48,11 @@ def parse_company(company_info) -> Company:
 
     selector = Selector(text=company_info)
 
-    first = lambda css: selector.css(css).get("").strip()
-    many = lambda css: ", ".join(
+    first = lambda css: selector.css(css).get("").strip()  # noqa: E731
+    many = lambda css: ", ".join(  # noqa: E731
         set([value.strip() for value in selector.css(css).getall()])
     )
-    together = lambda css, sep=" ": sep.join(selector.css(css).getall())
+    together = lambda css, sep=" ": sep.join(selector.css(css).getall())  # noqa: E731
 
     def _parse_address(address: str):
         pattern = r"<span>([^<]+)</span>([^,]+), ([A-Z]{2}) (\d{5})"
@@ -93,7 +92,7 @@ def parse_search(response) -> Preview:
 
     for result in sel.css(".organic div.result"):
         try:
-            first = lambda css: result.css(css).get("").strip()
+            first = lambda css: result.css(css).get("").strip()  # noqa: E731
             name = first("a.business-name ::text")
             if not name:
                 continue
@@ -131,7 +130,8 @@ async def scrape_company(
         Company: The company information.
     """
     header = {
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit"
+        "/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
     }
 
     page = await make_request(
@@ -211,7 +211,8 @@ async def search(
     companies = []
 
     header = {
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit"
+        "/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
     }
     # Get the first page of the search results
     first_page_content = await make_request(
