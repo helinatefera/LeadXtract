@@ -11,7 +11,6 @@ from collections import defaultdict
 
 import aiohttp
 from loguru import logger as log
-
 from yellowpages.proxy import Proxy
 
 
@@ -141,7 +140,6 @@ class EventManager(metaclass=SingletonMeta):
 
 
 class LoadingAnimation:
-
     def __init__(self, progress: threading.Event) -> None:
         self.progress = progress  # Event to stop the animation
         self.total_scraped = 0
