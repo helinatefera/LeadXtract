@@ -7,7 +7,6 @@ import aiohttp
 from loguru import logger as log
 from parsel import Selector
 from typing_extensions import TypedDict
-
 from yellowpages.proxy import Proxy
 from yellowpages.utils import EventManager, make_request
 
@@ -123,8 +122,8 @@ def parse_company(company_info) -> Company:
 
     selector = Selector(text=company_info, type="json")
 
-    first = lambda query: selector.jmespath(query).get("").strip()
-    many = lambda query: ", ".join(
+    first = lambda query: selector.jmespath(query).get("").strip()  # noqa: E731
+    many = lambda query: ", ".join(  # noqa: E731
         set([value.strip() for value in selector.jmespath(query).getall()])
     )
     info = {
@@ -156,7 +155,6 @@ def parse_search(response) -> Preview:
 
     for result in sel.jmespath("searchResult[0].merchants"):
         try:
-
             merchantId = result.jmespath("merchantId").get("").strip()
             if not merchantId:
                 continue
