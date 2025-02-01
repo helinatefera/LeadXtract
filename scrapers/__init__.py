@@ -11,7 +11,6 @@ from . import usa  # noqa: F401
 
 
 class Mapper:
-
     def __init__(self) -> None:
         self.mapping = {
             "austria": (austria, False),

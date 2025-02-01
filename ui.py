@@ -10,10 +10,9 @@ from tkinter import filedialog, messagebox
 import aiohttp
 import customtkinter as ctk
 from loguru import logger as log
-
 from yellowpages.proxy import Proxy
 from yellowpages.scrapers import Mapper
-from yellowpages.utils import LoadingAnimation, resource_path
+from yellowpages.utils import LoadingAnimation
 
 PROXY_FILE = ".proxies"
 
@@ -138,7 +137,7 @@ class ProxyConfigPopup(ctk.CTkToplevel):
         try:
             self.master.focus()
             self.destroy()
-        except:
+        except Exception:
             pass
 
     def save_proxy_list(self):
@@ -397,8 +396,11 @@ class YellowPagesScraperUI(ctk.CTk):
     async def run(self, query, progress, semaphore, proxy=None):
         BASE_HEADERS = {
             "accept-language": "en-US,en;q=0.9",
-            "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36",
-            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA5"
+            "8N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 M"
+            "obile Safari/537.36",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/webp,image/apng,*/*;q=0.8",
         }
 
         result_searchs = []
